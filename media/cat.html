@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src {{cspSource}}; script-src 'nonce-{{nonce}}';">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  /* ---------- Tokens ----------
+     Dark is the default; VS Code puts "vscode-light" / "vscode-high-contrast" on <body>. */
+  :root {
+    --ease-out: cubic-bezier(.16, 1, .3, 1);
+    --ease-spring: cubic-bezier(.34, 1.4, .64, 1);
+    --font: "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+    --font-display: "Segoe UI Variable Display", "Segoe UI", -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+  }
+
+  body {
+    --bg: var(--vscode-editor-background, #16161a);
+    --card: color-mix(in oklab, var(--bg) 90%, #fff);
+    --card-2: color-mix(in oklab, var(--bg) 84%, #fff);
+    --border: rgba(255, 255, 255, .09);
+    --border-strong: rgba(255, 255, 255, .16);
+    --text: #f5f5f7;
+    --muted: rgba(245, 245, 247, .66);
+    --faint: rgba(245, 245, 247, .42);
+    --track: rgba(255, 255, 255, .08);
+    --shadow: 0 1px 0 rgba(255, 255, 255, .05) inset, 0 30px 60px -20px rgba(0, 0, 0, .65), 0 12px 24px -12px rgba(0, 0, 0, .45);
+    --success: #4ade80;
+    --accent: var(--a-dark);
+    --on-accent: var(--ink-dark);
+  }
+  body.vscode-light {
+    --card: #ffffff;
+    --card-2: #f6f7f9;
+    --border: rgba(15, 23, 42, .08);
+    --border-strong: rgba(15, 23, 42, .16);
+    --text: #0f172a;
+    --muted: rgba(15, 23, 42, .64);
+    --faint: rgba(15, 23, 42, .42);
+    --track: rgba(15, 23, 42, .07);
+    --shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 24px 48px -16px rgba(15, 23, 42, .18), 0 8px 16px -8px rgba(15, 23, 42, .08);
+    --success: #16a34a;
+    --accent: var(--a-light);
+    --on-accent: #ffffff;
+  }
+  body.vscode-high-contrast, body.vscode-high-contrast-light {
+    --card: var(--bg);
+    --card-2: var(--bg);
+    --border: var(--vscode-contrastBorder, #fff);
+    --border-strong: var(--vscode-contrastBorder, #fff);
+    --text: var(--vscode-foreground);
+    --muted: var(--vscode-foreground);
+    --faint: var(--vscode-foreground);
+    --shadow: none;
+  }
+
+  /* One accent per reminder kind */
+  [data-kind="eye"]     { --a-dark: #a99bff; --ink-dark: #16112f; --a-light: #6450ee; }
+  [data-kind="water"],
+  [data-kind="stats"]   { --a-dark: #5cc8ff; --ink-dark: #03202e; --a-light: #0a85c9; }
+  [data-kind="stretch"] { --a-dark: #4fdcab; --ink-dark: #04281b; --a-light: #0b936a; }
+  [data-mood="grumpy"]  { --a-dark: #ff7d8f; --ink-dark: #2e0a10; --a-light: #dc3752; }
+
+  /* ---------- Page ---------- */
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    overflow: auto;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+
+  .stage {
+    position: relative;
+    min-height: 100%;
+    display: grid;
+    place-items: center;
+    padding: 24px 16px;
+  }
+
+  .buddy {
+    position: relative;
+    width: min(380px, 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: enter .8s var(--ease-out) both;
+  }
+  .buddy.leave { animation: leave .4s cubic-bezier(.4, 0, 1, 1) forwards; }
+  @keyframes enter { from { opacity: 0; transform: translateY(28px) scale(.98); filter: blur(6px); } }
+  @keyframes leave { to { opacity: 0; transform: translateY(16px) scale(.97); filter: blur(4px); } }
+
+  /* ---------- Card ---------- */
+  .card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    margin-top: -46px; /* the cat sits on the top edge */
+    padding: 54px 24px 22px;
+    border-radius: 22px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  /* thin accent line along the top edge */
+  .card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 24px; right: 24px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--accent) 70%, transparent), transparent);
+  }
+
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .chip {
+    display: grid;
+    place-items: center;
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    color: var(--accent);
+    background: color-mix(in oklab, var(--accent) 15%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 25%, transparent);
+  }
+  .chip svg { width: 15px; height: 15px; }
+  .eyebrow .kind { color: var(--text); opacity: .85; }
+  .eyebrow .sep { opacity: .5; }
+
+  .content { animation: swap .45s var(--ease-out); }
+  .content.swap { animation: none; }
+  @keyframes swap { from { opacity: 0; transform: translateY(6px); } }
+
+  h1 {
+    margin: 14px 0 6px;
+    font-family: var(--font-display);
+    font-size: 21px;
+    font-weight: 650;
+    letter-spacing: -.015em;
+    line-height: 1.25;
+  }
+  .msg {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.55;
+    transition: opacity .2s, transform .2s;
+  }
+  .msg.fade { opacity: 0; transform: translateY(4px); }
+
+  /* ---------- Buttons ---------- */
+  .actions { display: flex; gap: 10px; margin-top: 20px; }
+  .btn {
+    flex: 1;
+    min-width: 0;
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    transition: transform .15s var(--ease-out), background-color .2s, box-shadow .2s, opacity .2s, flex .4s var(--ease-out);
+  }
+  .btn:active { transform: scale(.97); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn.primary {
+    color: var(--on-accent);
+    background: var(--accent);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 6px 18px -6px color-mix(in oklab, var(--accent) 70%, transparent);
+  }
+  .btn.primary:hover { background: color-mix(in oklab, var(--accent) 88%, #fff); }
+  .btn.ghost {
+    color: var(--text);
+    background: transparent;
+    border-color: var(--border-strong);
+  }
+  .btn.ghost:hover { background: var(--track); }
+  .btn.done { --accent: var(--success); }
+
+  /* snooze collapses away when the break starts */
+  .btn.vanish {
+    flex: 0 0 0;
+    padding: 0;
+    border-width: 0;
+    opacity: 0;
+    margin-right: -10px;
+    pointer-events: none;
+  }
+
+  kbd {
+    margin-left: 6px;
+    font: inherit;
+    font-size: 11px;
+    opacity: .55;
+  }
+
+  /* ---------- Water glasses ---------- */
+  .glasses { margin-top: 18px; }
+  .glasses-head { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--muted); }
+  .glasses-head b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .segments { display: flex; gap: 4px; margin-top: 8px; }
+  .segments i {
+    flex: 1;
+    height: 6px;
+    border-radius: 99px;
+    background: var(--track);
+  }
+  .segments i.on {
+    background: var(--accent);
+    animation: fill-in .5s var(--ease-out) both;
+  }
+  @keyframes fill-in { from { transform: scaleX(0); transform-origin: left; } }
+
+  /* ---------- Break timer ---------- */
+  .timer-wrap {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows .55s var(--ease-out);
+  }
+  .timer-wrap.open { grid-template-rows: 1fr; }
+  .timer-wrap > div { overflow: hidden; }
+  .timer { position: relative; width: 148px; height: 148px; margin: 22px auto 4px; }
+  .timer svg { width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
+  .timer circle { fill: none; stroke-width: 5; stroke-linecap: round; }
+  .timer .track { stroke: var(--track); }
+  .timer .ring {
+    stroke: var(--accent);
+    filter: drop-shadow(0 0 6px color-mix(in oklab, var(--accent) 55%, transparent));
+    transition: stroke-dashoffset 1s linear, stroke .4s;
+  }
+  .timer.reached .ring { stroke: var(--success); filter: drop-shadow(0 0 6px color-mix(in oklab, var(--success) 55%, transparent)); }
+  .timer .num {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .timer .digits {
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 600;
+    letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .timer .label {
+    margin-top: 6px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .timer.reached .label { color: var(--success); }
+  .goal-note { text-align: center; font-size: 12.5px; color: var(--muted); min-height: 1.4em; }
+
+  /* ---------- Stats ---------- */
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 18px; }
+  .tile {
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--card-2);
+    border: 1px solid var(--border);
+  }
+  .tile .t-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .tile .t-label svg { width: 13px; height: 13px; opacity: .8; }
+  .tile .t-value {
+    margin-top: 6px;
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 650;
+    letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .tile .t-value small { font-size: 14px; font-weight: 500; color: var(--faint); margin-left: 2px; }
+
+  .streak {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    padding: 5px 10px 5px 8px;
+    border-radius: 99px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text);
+    background: var(--track);
+  }
+  .streak svg { width: 14px; height: 14px; color: #ff9f43; }
+
+  .chart-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 22px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .chart-head span { font-size: 12px; font-weight: 500; color: var(--faint); }
+  .chart { position: relative; height: 128px; margin-top: 10px; padding-top: 18px; }
+  .plot { position: relative; height: 88px; display: flex; gap: 2px; align-items: flex-end; border-bottom: 1px solid var(--border); }
+  .goal-line {
+    position: absolute;
+    left: 0; right: 0;
+    border-top: 1px dashed var(--border-strong);
+    pointer-events: none;
+  }
+  .goal-line span {
+    position: absolute;
+    right: 0; top: -17px;
+    font-size: 10.5px;
+    color: var(--faint);
+  }
+  .col {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    cursor: default;
+  }
+  .col .bar {
+    width: min(26px, 70%);
+    min-height: 2px;
+    border-radius: 4px 4px 0 0;
+    background: color-mix(in oklab, var(--accent) 55%, var(--card));
+    transform-origin: bottom;
+    animation: grow .7s var(--ease-out) both;
+    transition: background .15s;
+  }
+  .col.today .bar, .col:hover .bar { background: var(--accent); }
+  @keyframes grow { from { transform: scaleY(0); } }
+  .days { display: flex; gap: 2px; margin-top: 6px; }
+  .days span { flex: 1; text-align: center; font-size: 11px; color: var(--faint); }
+  .days span.today { color: var(--text); font-weight: 600; }
+  .tip {
+    position: absolute;
+    top: 0;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--bg);
+    background: var(--text);
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity .15s;
+    pointer-events: none;
+  }
+  .tip.show { opacity: 1; }
+
+  /* ---------- The cat (media/cat-art.css) ---------- */
+{{catCss}}
+  @media (max-height: 560px) { .cat { width: 132px; } .card { margin-top: -36px; padding-top: 44px; } }
+
+  /* Little marks floating up beside the cat's head */
+  .floaty {
+    position: absolute;
+    top: 70px;
+    z-index: 3;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent);
+    opacity: 0;
+    animation: float-up 3.2s ease-out infinite;
+    pointer-events: none;
+  }
+  .f1 { left: calc(50% + 62px); animation-delay: 1.4s; }
+  .f2 { left: calc(50% - 82px); animation-delay: 2.5s; font-size: 12px; }
+  .f3 { left: calc(50% + 44px); animation-delay: 3.6s; font-size: 11px; }
+  @keyframes float-up {
+    0%   { opacity: 0; transform: translateY(0) scale(.6); }
+    20%  { opacity: .9; }
+    100% { opacity: 0; transform: translateY(-70px) scale(1.1); }
+  }
+
+  /* Confetti */
+  .confetti {
+    position: absolute;
+    left: 50%;
+    top: 130px;
+    z-index: 4;
+    width: 7px;
+    height: 11px;
+    border-radius: 2px;
+    pointer-events: none;
+    animation: confetti 1.3s var(--ease-out) forwards;
+  }
+  @keyframes confetti {
+    0%   { transform: translate(0, 0) rotate(0) scale(.6); opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(1); opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    .floaty, .confetti { display: none; }
+  }
+</style>
+</head>
+<body>
+  <main class="stage">
+    <div class="buddy" id="buddy">
+      <span class="floaty f1"></span>
+      <span class="floaty f2"></span>
+      <span class="floaty f3"></span>
+
+      {{catSvg}}
+
+      <section class="card">
+        <header class="eyebrow">
+          <span class="chip" id="chip"></span>
+          <span class="kind" id="kind"></span>
+          <span class="sep">·</span>
+          <span id="who"></span>
+        </header>
+        <div class="content" id="content"></div>
+      </section>
+    </div>
+  </main>
+
+<script id="data" type="application/json">{{data}}</script>
+<script nonce="{{nonce}}">
+  const D = JSON.parse(document.getElementById('data').textContent);
+  const vscode = acquireVsCodeApi();
+  const buddy = document.getElementById('buddy');
+  const content = document.getElementById('content');
+  const cat = document.getElementById('cat');
+
+  for (const [name, value] of Object.entries(D.colors || {})) {
+    document.documentElement.style.setProperty('--' + name, value);
+  }
+  document.getElementById('prop').textContent = D.prop || '';
+
+  // ---------- Icons (24x24 line icons) ----------
+  const ICON_PATHS = {
+    eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    water: '<path d="M12 2.7s6.2 6.4 6.2 11.2a6.2 6.2 0 0 1-12.4 0C5.8 9.1 12 2.7 12 2.7z"/>',
+    stretch: '<circle cx="12" cy="4.5" r="1.8"/><path d="M5 8.5l7 2 7-2M12 10.5V15m-3.5 6l3.5-6 3.5 6"/>',
+    stats: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    clock: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/>',
+    flame: '<path d="M12 22a7 7 0 0 0 7-7c0-4-3-6-4-9-1 2-2 3-3.5 3.5C10 7 9.5 4.5 10 2 6.5 4.5 5 9 5 15a7 7 0 0 0 7 7z"/>',
+  };
+  function icon(name) {
+    const span = document.createElement('span');
+    span.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name]}</svg>`;
+    return span.firstChild;
+  }
+
+  // ---------- small helpers ----------
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // The messages from extension.js are full of emoji; the card reads cleaner without them.
+  const EMOJI = /[\p{Extended_Pictographic}\u{1F3FB}-\u{1F3FF}️‍]/gu;
+  const plain = (s) => String(s ?? '').replace(EMOJI, '').replace(/\s+([.,!?])/g, '$1').replace(/\s{2,}/g, ' ').trim();
+
+  function el(tag, className, text) {
+    const e = document.createElement(tag);
+    if (className) e.className = className;
+    if (text != null) e.textContent = text; // textContent = no HTML injection
+    return e;
+  }
+
+  function button(label, className, onClick) {
+    const b = el('button', 'btn ' + className, plain(label));
+    if (onClick) b.addEventListener('click', onClick, { once: true });
+    return b;
+  }
+
+  function row(...buttons) {
+    const r = el('div', 'actions');
+    r.append(...buttons);
+    return r;
+  }
+
+  function setContent(...children) {
+    content.replaceChildren(...children);
+    content.classList.add('swap');
+    void content.offsetWidth; // restart the animation
+    content.classList.remove('swap');
+  }
+
+  function setMood(mood) {
+    cat.classList.remove('happy', 'sleepy', 'grumpy');
+    if (mood) cat.classList.add(mood);
+    document.body.dataset.mood = mood || '';
+    const floaties = { grumpy: ['!', '#', '!'], sleepy: ['z', 'z', 'Z'] }[mood] || ['✦', '✦', '·'];
+    document.querySelectorAll('.floaty').forEach((f, i) => (f.textContent = floaties[i]));
+  }
+
+  function confetti() {
+    const colors = ['var(--accent)', 'var(--success)', '#ffd166', '#ff8fab'];
+    for (let i = 0; i < 22; i++) {
+      const c = el('span', 'confetti');
+      const angle = -Math.PI * (0.1 + 0.8 * Math.random());
+      const dist = 80 + Math.random() * 110;
+      c.style.background = colors[i % colors.length];
+      c.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+      c.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+      c.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
+      buddy.append(c);
+      setTimeout(() => c.remove(), 1400);
+    }
+  }
+
+  function finish(choice, seconds) {
+    buddy.classList.add('leave');
+    setTimeout(() => vscode.postMessage(seconds == null ? { choice } : { choice, seconds }), 400);
+  }
+
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = String(seconds % 60).padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  function niceDuration(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    if (m === 0) return `${s}s`;
+    return s ? `${m}m ${s}s` : `${m}m`;
+  }
+
+  // ---------- header ----------
+  const KINDS = { eye: 'Eye break', water: 'Hydration', stretch: 'Stretch break', stats: 'Daily report' };
+  const kind = D.mode === 'stats' ? 'stats' : D.kind;
+  document.body.dataset.kind = kind;
+  document.getElementById('chip').append(icon(kind));
+  document.getElementById('kind').textContent = KINDS[kind];
+  document.getElementById('who').textContent = D.catName;
+
+  // ---------- screens ----------
+  async function celebrate(text, seconds) {
+    setMood('happy');
+    const parts = [el('h1', null, plain(text))];
+    if (seconds) parts.push(el('p', 'msg', `You took a ${niceDuration(seconds)} break. Nice.`));
+    setContent(...parts);
+    confetti();
+    await wait(2200);
+    finish('done', seconds);
+  }
+
+  function glasses(p) {
+    const wrap = el('div', 'glasses');
+    const head = el('div', 'glasses-head');
+    const count = el('span');
+    count.append(el('b', null, `${p.value} of ${p.max}`), ' glasses today');
+    head.append(count, el('span', null, p.value >= p.max ? 'Goal met' : `${p.max - p.value} to go`));
+    const segs = el('div', 'segments');
+    const n = Math.min(p.max, 16);
+    const filled = Math.round(Math.min(1, p.value / p.max) * n);
+    for (let i = 0; i < n; i++) {
+      const s = el('i', i < filled ? 'on' : null);
+      s.style.animationDelay = 200 + i * 50 + 'ms';
+      segs.append(s);
+    }
+    wrap.append(head, segs);
+    return wrap;
+  }
+
+  // The reminder: [Snooze] [Take a break]
+  function showReminder() {
+    setMood(D.mood);
+
+    const title = el('h1', null, plain(D.greeting));
+    const message = el('p', 'msg', plain(D.message));
+    const timerWrap = el('div', 'timer-wrap');
+    const snooze = button(D.snoozeLabel, 'ghost', () => finish('snooze'));
+    const takeBreak = button(D.breakLabel, 'primary');
+    takeBreak.addEventListener('click', () => startBreak({ title, message, timerWrap, snooze, takeBreak }), { once: true });
+
+    const parts = [title, message];
+    if (D.progress) parts.push(glasses(D.progress));
+    parts.push(timerWrap, row(snooze, takeBreak));
+    setContent(...parts);
+  }
+
+  // Clicking "Take a break": snooze collapses, a stopwatch opens and counts up until Stop.
+  async function startBreak({ title, message, timerWrap, snooze, takeBreak }) {
+    snooze.classList.add('vanish');
+    setTimeout(() => snooze.remove(), 400);
+    setMood(D.kind === 'eye' ? 'sleepy' : '');
+
+    // swap the text with a quick fade
+    message.classList.add('fade');
+    title.classList.add('msg', 'fade');
+    await wait(200);
+    title.textContent = plain(D.breakGreeting);
+    message.textContent = plain(D.breakMessage);
+    message.classList.remove('fade');
+    title.classList.remove('msg', 'fade');
+    const progress = content.querySelector('.glasses');
+    if (progress) progress.remove();
+
+    // stopwatch
+    const goal = D.breakGoal || 0;
+    const r = 44;
+    const circumference = 2 * Math.PI * r;
+    const timer = el('div', 'timer');
+    timer.innerHTML = `<svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="${r}"/><circle class="ring" cx="50" cy="50" r="${r}"/></svg>`;
+    const ring = timer.querySelector('.ring');
+    ring.style.strokeDasharray = circumference;
+    ring.style.strokeDashoffset = circumference;
+    const num = el('div', 'num');
+    const digits = el('span', 'digits', '0:00');
+    const label = el('span', 'label', goal ? `Goal ${formatTime(goal)}` : 'On break');
+    num.append(digits, label);
+    timer.append(num);
+
+    const inner = el('div');
+    const goalNote = el('div', 'goal-note', '');
+    inner.append(timer, goalNote);
+    timerWrap.append(inner);
+    requestAnimationFrame(() => timerWrap.classList.add('open'));
+
+    // the break button becomes the stop button
+    takeBreak.textContent = plain(D.stopLabel);
+    takeBreak.classList.add('done');
+
+    let seconds = 0;
+    const timerId = setInterval(() => {
+      seconds++;
+      digits.textContent = formatTime(seconds);
+
+      if (goal) {
+        // fill the ring up to the goal, then keep it full
+        ring.style.strokeDashoffset = circumference * (1 - Math.min(1, seconds / goal));
+        if (seconds === goal) {
+          timer.classList.add('reached');
+          label.textContent = 'Goal reached';
+          setMood('happy');
+          title.textContent = plain(D.goalGreeting);
+          goalNote.textContent = 'Keep going, or stop whenever you like.';
+          confetti();
+        }
+      } else {
+        // no goal: the ring goes round once a minute
+        ring.style.strokeDashoffset = circumference * (1 - (seconds % 60 || 60) / 60);
+      }
+      // a little cheer every full minute
+      if (seconds % 60 === 0) confetti();
+    }, 1000);
+
+    takeBreak.addEventListener('click', () => {
+      clearInterval(timerId);
+      celebrate(D.celebrate, seconds);
+    }, { once: true });
+  }
+
+  function tile(iconName, label, value, unit) {
+    const t = el('div', 'tile');
+    const l = el('div', 't-label');
+    l.append(icon(iconName), label);
+    const v = el('div', 't-value', value);
+    if (unit) v.append(el('small', null, unit));
+    t.append(l, v);
+    return t;
+  }
+
+  function weekChart() {
+    const wrap = el('div');
+    const head = el('div', 'chart-head', 'Water this week');
+    head.append(el('span', null, 'glasses per day'));
+
+    const chart = el('div', 'chart');
+    const plot = el('div', 'plot');
+    const max = Math.max(D.goal, ...D.week.map((d) => d.water)) * 1.1;
+    const goalLine = el('div', 'goal-line');
+    goalLine.style.bottom = (D.goal / max) * 100 + '%';
+    goalLine.append(el('span', null, `Goal ${D.goal}`));
+    plot.append(goalLine);
+
+    const tip = el('div', 'tip');
+    const days = el('div', 'days');
+    D.week.forEach((d, i) => {
+      const today = i === D.week.length - 1;
+      const col = el('div', today ? 'col today' : 'col');
+      const bar = el('div', 'bar');
+      bar.style.height = (d.water / max) * 100 + '%';
+      bar.style.animationDelay = 150 + i * 60 + 'ms';
+      col.append(bar);
+      col.setAttribute('aria-label', `${d.label}: ${d.water} glasses`);
+      col.addEventListener('pointerenter', () => {
+        tip.textContent = `${today ? 'Today' : d.label} · ${d.water} ${d.water === 1 ? 'glass' : 'glasses'}`;
+        tip.style.left = col.offsetLeft + col.offsetWidth / 2 + 'px';
+        tip.classList.add('show');
+      });
+      col.addEventListener('pointerleave', () => tip.classList.remove('show'));
+      plot.append(col);
+      days.append(el('span', today ? 'today' : null, today ? 'Today' : d.label));
+    });
+
+    chart.append(tip, plot, days);
+    wrap.append(head, chart);
+    return wrap;
+  }
+
+  function showStats() {
+    setMood(D.mood);
+    const t = D.today;
+
+    const tiles = el('div', 'tiles');
+    tiles.append(
+      tile('water', 'Water', String(t.water), `/ ${D.goal}`),
+      tile('eye', 'Eye breaks', String(t.eye)),
+      tile('stretch', 'Stretches', String(t.stretch)),
+      tile('clock', 'Break time', niceDuration(t.breakSeconds || 0)),
+    );
+
+    const streak = el('div', 'streak');
+    streak.append(icon('flame'), `${D.streak}-day water streak`);
+
+    setContent(
+      el('h1', null, 'Today at a glance'),
+      el('p', 'msg', plain(D.verdict)),
+      tiles,
+      streak,
+      weekChart(),
+      row(button('Done', 'primary', () => finish('close')))
+    );
+  }
+
+  if (D.mode === 'stats') showStats();
+  else showReminder();
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+/* The cat's look: shared by the side panel (media/cat.html) and the on-code overlay (overlay.js).
+   Fur colours are overwritten from the "heilo.catColor" setting. */
+:root {
+    --fur: #eba35f;
+    --fur-dark: #b9692d;
+    --cream: #fbeedd;
+    --line: #4a2f22;
+    --eye: #120d0b;      /* pupil */
+    --iris: #c4d153;
+    --iris-dark: #6f8a2a;
+    --nose: #d98a92;
+    --pink: #eaa3a8;
+}
+
+  .cat {
+    position: relative;
+    z-index: 2;
+    width: 176px;
+    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, .2));
+    animation: breathe 3.6s ease-in-out infinite;
+  }
+  @keyframes breathe { 50% { transform: translateY(-2px); } }
+
+  .head  { transform-origin: 120px 130px; animation: tilt 6s ease-in-out infinite; }
+  .tail  { transform-origin: 160px 230px; animation: sway 3.2s ease-in-out infinite; }
+  .ear-l { transform-origin: 96px 70px;  transition: transform .4s cubic-bezier(.16, 1, .3, 1); }
+  .ear-r { transform-origin: 144px 70px; animation: twitch 6s ease-in-out infinite; transition: transform .4s cubic-bezier(.16, 1, .3, 1); }
+  .eye   { transform-box: fill-box; transform-origin: center; animation: blink 5s infinite; }
+  @keyframes tilt   { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2.5deg); } }
+  @keyframes sway   { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-7deg); } }
+  @keyframes twitch { 0%, 90%, 100% { transform: rotate(0); } 93% { transform: rotate(8deg); } 96% { transform: rotate(-3deg); } }
+  @keyframes blink  { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.08); } }
+
+  /* Moods: happy (slow-blink squint, little hop), sleepy (closed eyes),
+     grumpy (furrowed brow, flat "airplane" ears, flicking tail) */
+  .eyes-happy, .eyes-sleepy, .brows, .mouth-grumpy { display: none; }
+  .cat.happy .eyes-open,  .cat.sleepy .eyes-open  { display: none; }
+  .cat.happy .eyes-happy  { display: inline; }
+  .cat.sleepy .eyes-sleepy { display: inline; }
+  .cat.grumpy .brows, .cat.grumpy .mouth-grumpy { display: inline; }
+  .cat.grumpy .mouth-w, .cat.grumpy .blush { display: none; }
+  .cat.grumpy .ear-l { transform: rotate(-32deg); }
+  .cat.grumpy .ear-r { animation: none; transform: rotate(32deg); }
+  .cat.grumpy .tail { animation: flick .5s ease-in-out infinite; }
+  .cat.grumpy .head { animation: none; }
+  .cat.sleepy .head { animation-duration: 9s; }
+  .cat.happy { animation: hop .55s cubic-bezier(.16, 1, .3, 1) 2; }
+  @keyframes flick { 50% { transform: rotate(-10deg); } }
+  @keyframes hop { 40% { transform: translateY(-10px); } }
