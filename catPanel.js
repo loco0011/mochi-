@@ -11,7 +11,7 @@ function showCatPanel(extensionPath, data) {
   return new Promise((resolve) => {
     const mediaPath = path.join(extensionPath, 'media');
     const panel = vscode.window.createWebviewPanel(
-      'heiloCat',
+      'mochiCat',
       `${data.catName} 🐱`,
       { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true }, // don't steal your cursor
       { enableScripts: true, localResourceRoots: [vscode.Uri.file(mediaPath)] }

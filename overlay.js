@@ -211,7 +211,7 @@ class Overlay {
   start() {
     this.status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1000);
     this.status.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
-    this.status.command = 'heilo.overlayActions';
+    this.status.command = 'mochi.overlayActions';
     this.status.tooltip = `${this.data.catName} wants your attention. Click for options.`;
     this.status.show();
 

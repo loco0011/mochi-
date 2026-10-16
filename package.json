@@ -1,8 +1,8 @@
 {
-  "name": "heilo",
-  "displayName": "Heilo - Eye & Water Buddy",
+  "name": "mochi",
+  "displayName": "Mochi - Eye & Water Buddy",
   "description": "A cute cat that reminds you to rest your eyes, drink water and stretch, and tracks your daily water goal.",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "publisher": "sambit-maity",
   "author": {
     "name": "Sambit Maity",
@@ -25,80 +25,80 @@
   "main": "./extension.js",
   "contributes": {
     "commands": [
-      { "command": "heilo.menu", "title": "Heilo: Open Menu" },
-      { "command": "heilo.logWater", "title": "Heilo: I Drank Water 💧" },
-      { "command": "heilo.showStats", "title": "Heilo: Show My Stats 📊" },
-      { "command": "heilo.togglePause", "title": "Heilo: Pause / Resume Reminders" },
-      { "command": "heilo.resetTimers", "title": "Heilo: Reset Timers" },
-      { "command": "heilo.testEye", "title": "Heilo: Test Eye Break Reminder" },
-      { "command": "heilo.testWater", "title": "Heilo: Test Water Reminder" },
-      { "command": "heilo.testStretch", "title": "Heilo: Test Stretch Reminder" }
+      { "command": "mochi.menu", "title": "Mochi: Open Menu" },
+      { "command": "mochi.logWater", "title": "Mochi: I Drank Water 💧" },
+      { "command": "mochi.showStats", "title": "Mochi: Show My Stats 📊" },
+      { "command": "mochi.togglePause", "title": "Mochi: Pause / Resume Reminders" },
+      { "command": "mochi.resetTimers", "title": "Mochi: Reset Timers" },
+      { "command": "mochi.testEye", "title": "Mochi: Test Eye Break Reminder" },
+      { "command": "mochi.testWater", "title": "Mochi: Test Water Reminder" },
+      { "command": "mochi.testStretch", "title": "Mochi: Test Stretch Reminder" }
     ],
     "configuration": {
-      "title": "Heilo",
+      "title": "Mochi",
       "properties": {
-        "heilo.eyeBreakMinutes": {
+        "mochi.eyeBreakMinutes": {
           "type": "number",
           "default": 60,
           "minimum": 0,
           "order": 1,
           "description": "Minutes between eye break reminders. 0 turns them off."
         },
-        "heilo.waterMinutes": {
+        "mochi.waterMinutes": {
           "type": "number",
           "default": 120,
           "minimum": 0,
           "order": 2,
           "description": "Minutes between water reminders. 0 turns them off."
         },
-        "heilo.stretchMinutes": {
+        "mochi.stretchMinutes": {
           "type": "number",
           "default": 90,
           "minimum": 0,
           "order": 3,
           "description": "Minutes between stretch reminders. 0 turns them off."
         },
-        "heilo.waterGoal": {
+        "mochi.waterGoal": {
           "type": "number",
           "default": 8,
           "minimum": 1,
           "order": 4,
           "description": "How many glasses of water you want to drink each day."
         },
-        "heilo.eyeRestSeconds": {
+        "mochi.eyeRestSeconds": {
           "type": "number",
           "default": 20,
           "minimum": 0,
           "order": 5,
           "description": "Goal length of an eye break in seconds (the 20-20-20 rule). The timer ring fills up to this. 0 means no goal."
         },
-        "heilo.snoozeMinutes": {
+        "mochi.snoozeMinutes": {
           "type": "number",
           "default": 5,
           "minimum": 1,
           "order": 6,
           "description": "Minutes to wait when you hit Snooze."
         },
-        "heilo.catName": {
+        "mochi.catName": {
           "type": "string",
           "default": "Mochi",
           "order": 7,
           "description": "Your cat's name."
         },
-        "heilo.catColor": {
+        "mochi.catColor": {
           "type": "string",
           "enum": ["orange", "grey", "black", "white"],
           "default": "orange",
           "order": 8,
           "description": "Your cat's fur colour."
         },
-        "heilo.politeMode": {
+        "mochi.politeMode": {
           "type": "boolean",
           "default": true,
           "order": 9,
           "description": "Wait until you stop typing and aren't debugging before showing a reminder."
         },
-        "heilo.style": {
+        "mochi.style": {
           "type": "string",
           "enum": ["overlay", "cat", "notification"],
           "enumDescriptions": [

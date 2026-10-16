@@ -1,5 +1,5 @@
 /* The cat's look: shared by the side panel (media/cat.html) and the on-code overlay (overlay.js).
-   Fur colours are overwritten from the "heilo.catColor" setting. */
+   Fur colours are overwritten from the "mochi.catColor" setting. */
 :root {
     --fur: #eba35f;
     --fur-dark: #b9692d;

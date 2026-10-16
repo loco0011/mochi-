@@ -1,7 +1,7 @@
 // Keeps a small daily history: how many glasses of water, eye breaks, stretches and snoozes.
 // Stored in VS Code's globalState, so it survives restarts.
 
-const KEY = 'heilo.history';
+const KEY = 'mochi.history';
 const KEEP_DAYS = 60;
 
 function dayKey(date = new Date()) {

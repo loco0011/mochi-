@@ -1,4 +1,4 @@
-// Heilo - a cute cat that reminds you to rest your eyes, drink water and stretch.
+// Mochi - a cute cat that reminds you to rest your eyes, drink water and stretch.
 const vscode = require('vscode');
 const { Stats } = require('./stats');
 const { showCatPanel } = require('./catPanel');
@@ -85,7 +85,7 @@ const BREAK_MESSAGES = {
 };
 
 // How long a break should be (seconds). The ring fills up to this; 0 means no goal.
-// The eye goal comes from the "heilo.eyeRestSeconds" setting.
+// The eye goal comes from the "mochi.eyeRestSeconds" setting.
 const BREAK_GOALS = { water: 0, stretch: 60 };
 
 const CELEBRATE = {
@@ -94,7 +94,7 @@ const CELEBRATE = {
   stretch: ['Look at you, so bendy! 🧘', 'Purrfect stretch 🐈', 'Taller already! 📏'],
 };
 
-// Colours for the "heilo.catColor" setting. Keys match the CSS variables in media/cat.html.
+// Colours for the "mochi.catColor" setting. Keys match the CSS variables in media/cat.html.
 const CAT_COLORS = {
 // 'eye' is the pupil, 'iris' / 'iris-dark' the eye colour.
   orange: { 'fur': '#eba35f', 'fur-dark': '#b9692d', 'cream': '#fbeedd', 'line': '#4a2f22', 'eye': '#120d0b', 'iris': '#c4d153', 'iris-dark': '#6f8a2a', 'nose': '#d98a92' },
@@ -124,7 +124,7 @@ const reminders = {
 const allReminders = () => Object.values(reminders);
 
 function config(key) {
-  return vscode.workspace.getConfiguration('heilo').get(key);
+  return vscode.workspace.getConfiguration('mochi').get(key);
 }
 
 function minutes(n) {
@@ -166,11 +166,11 @@ function restart(reminder) {
 function saveTimers() {
   const due = {};
   for (const r of allReminders()) due[r.kind] = r.dueAt;
-  context.globalState.update('heilo.dueAt', due);
+  context.globalState.update('mochi.dueAt', due);
 }
 
 function loadTimers() {
-  const saved = context.globalState.get('heilo.dueAt', {});
+  const saved = context.globalState.get('mochi.dueAt', {});
   const now = Date.now();
   for (const r of allReminders()) {
     const due = saved[r.kind];
@@ -182,7 +182,7 @@ function loadTimers() {
 }
 
 function syncTimers() {
-  const saved = context.globalState.get('heilo.dueAt', {});
+  const saved = context.globalState.get('mochi.dueAt', {});
   for (const r of allReminders()) {
     if (typeof saved[r.kind] === 'number') r.dueAt = saved[r.kind];
   }
@@ -353,7 +353,7 @@ function resetTimers() {
   }
   saveTimers();
   updateStatusBar();
-  vscode.window.showInformationMessage('Heilo timers reset ⏱️');
+  vscode.window.showInformationMessage('Mochi timers reset ⏱️');
 }
 
 async function openMenu() {
@@ -369,7 +369,7 @@ async function openMenu() {
     { label: '💧 Water reminder now', run: () => showReminder(reminders.water) },
     { label: '🧘 Stretch reminder now', run: () => showReminder(reminders.stretch) },
     separator(''),
-    { label: '$(gear) Settings', description: 'intervals, cat name, fur colour...', run: () => vscode.commands.executeCommand('workbench.action.openSettings', 'heilo') },
+    { label: '$(gear) Settings', description: 'intervals, cat name, fur colour...', run: () => vscode.commands.executeCommand('workbench.action.openSettings', 'mochi') },
   ];
   const picked = await vscode.window.showQuickPick(items, { placeHolder: `${catName()} 🐱 what do you need?` });
   if (picked) picked.run();
@@ -407,7 +407,7 @@ function activate(ctx) {
   stats = new Stats(ctx.globalState);
 
   statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-  statusBar.command = 'heilo.menu';
+  statusBar.command = 'mochi.menu';
   statusBar.show();
 
   loadTimers();
@@ -417,15 +417,15 @@ function activate(ctx) {
   ctx.subscriptions.push(
     statusBar,
     { dispose: () => clearInterval(ticker) },
-    vscode.commands.registerCommand('heilo.menu', openMenu),
-    vscode.commands.registerCommand('heilo.logWater', logWater),
-    vscode.commands.registerCommand('heilo.showStats', showStats),
-    vscode.commands.registerCommand('heilo.togglePause', togglePause),
-    vscode.commands.registerCommand('heilo.resetTimers', resetTimers),
-    vscode.commands.registerCommand('heilo.testEye', () => showReminder(reminders.eye)),
-    vscode.commands.registerCommand('heilo.testWater', () => showReminder(reminders.water)),
-    vscode.commands.registerCommand('heilo.testStretch', () => showReminder(reminders.stretch)),
-    vscode.commands.registerCommand('heilo.overlayActions', overlayMenu),
+    vscode.commands.registerCommand('mochi.menu', openMenu),
+    vscode.commands.registerCommand('mochi.logWater', logWater),
+    vscode.commands.registerCommand('mochi.showStats', showStats),
+    vscode.commands.registerCommand('mochi.togglePause', togglePause),
+    vscode.commands.registerCommand('mochi.resetTimers', resetTimers),
+    vscode.commands.registerCommand('mochi.testEye', () => showReminder(reminders.eye)),
+    vscode.commands.registerCommand('mochi.testWater', () => showReminder(reminders.water)),
+    vscode.commands.registerCommand('mochi.testStretch', () => showReminder(reminders.stretch)),
+    vscode.commands.registerCommand('mochi.overlayActions', overlayMenu),
 
     // Remember when you last typed, for polite mode.
     vscode.workspace.onDidChangeTextDocument((e) => {
@@ -434,9 +434,9 @@ function activate(ctx) {
 
     // If you change an interval in Settings, restart that countdown.
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (!e.affectsConfiguration('heilo')) return;
+      if (!e.affectsConfiguration('mochi')) return;
       for (const r of allReminders()) {
-        if (e.affectsConfiguration(`heilo.${r.setting}`)) restart(r);
+        if (e.affectsConfiguration(`mochi.${r.setting}`)) restart(r);
       }
       saveTimers();
       updateStatusBar();
