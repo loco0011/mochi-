@@ -195,6 +195,11 @@ function overlayMenu() {
   if (current) current.menu();
 }
 
+// Takes the cat off the screen right away (used when the extension shuts down or updates).
+function hideOverlay() {
+  if (current) current.finish({});
+}
+
 class Overlay {
   constructor(data, editor, resolve) {
     this.data = data;
@@ -385,4 +390,4 @@ class Overlay {
   }
 }
 
-module.exports = { showOverlay, overlayMenu, drawScene, loadArt };
+module.exports = { showOverlay, overlayMenu, hideOverlay, drawScene, loadArt };

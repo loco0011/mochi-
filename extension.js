@@ -2,7 +2,7 @@
 const vscode = require('vscode');
 const { Stats } = require('./stats');
 const { showCatPanel } = require('./catPanel');
-const { showOverlay, overlayMenu } = require('./overlay');
+const { showOverlay, overlayMenu, hideOverlay } = require('./overlay');
 
 // ---------- The funny bits (add your own!) ----------
 const MESSAGES = {
@@ -444,6 +444,8 @@ function activate(ctx) {
   );
 }
 
-function deactivate() {}
+function deactivate() {
+  hideOverlay();
+}
 
 module.exports = { activate, deactivate };
