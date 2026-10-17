@@ -2,7 +2,7 @@
 const vscode = require('vscode');
 const { Stats } = require('./stats');
 const { showCatPanel } = require('./catPanel');
-const { showOverlay, overlayMenu, hideOverlay } = require('./overlay');
+const { showOverlay, overlayMenu, hideOverlay, chooseOverlayPosition } = require('./overlay');
 
 // ---------- The funny bits (add your own!) ----------
 const MESSAGES = {
@@ -369,6 +369,7 @@ async function openMenu() {
     { label: '💧 Water reminder now', run: () => showReminder(reminders.water) },
     { label: '🧘 Stretch reminder now', run: () => showReminder(reminders.stretch) },
     separator(''),
+    { label: '$(move) Where the cat sits', description: 'on your code', run: () => chooseOverlayPosition(catName()) },
     { label: '$(gear) Settings', description: 'intervals, cat name, fur colour...', run: () => vscode.commands.executeCommand('workbench.action.openSettings', 'mochi') },
   ];
   const picked = await vscode.window.showQuickPick(items, { placeHolder: `${catName()} 🐱 what do you need?` });

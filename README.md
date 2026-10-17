@@ -9,6 +9,7 @@ A cute cartoon cat (default name: Mochi) slides into VS Code to remind you to:
 ## Features
 
 - **Break timer.** Every reminder has `Snooze` and `Take a break`. Taking a break makes Snooze vanish and starts a stopwatch that counts up until you hit **Stop**. The ring fills toward a goal (20s for eyes, 60s for stretches) and turns green when you reach it
+- **Move or close the cat.** While Mochi is on your code, click **Move** to pick a new spot (it's remembered) or **Close** to send it away. Both are in the notification and the status bar button
 - **Moods.** Mochi is happy when you listen, sleepy during eye breaks, and **grumpy** if you snooze twice 😾
 - **Water tracking.** Progress bar, a celebration when you hit your goal, and a daily streak 🔥
 - **Report card.** "Mochi: Show My Stats" shows today's numbers and a 7-day water chart
@@ -34,6 +35,7 @@ Open Settings and search **mochi**.
 | `mochi.catColor` | orange | orange, grey, black or white |
 | `mochi.politeMode` | true | Don't interrupt while typing or debugging |
 | `mochi.style` | overlay | `overlay` (cat + comic bubble right on your code), `cat` (side panel) or plain `notification` |
+| `mochi.overlayPosition` | auto | Where the overlay cat sits: `auto` (emptiest spot), `top-right`, `bottom-right`, `top-left` or `bottom-left` |
 
 ## Files
 

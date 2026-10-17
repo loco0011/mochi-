@@ -2,7 +2,7 @@
   "name": "mochi",
   "displayName": "Mochi - Eye & Water Buddy",
   "description": "A cute cat that reminds you to rest your eyes, drink water and stretch, and tracks your daily water goal.",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "publisher": "sambit-maity",
   "author": {
     "name": "Sambit Maity",
@@ -109,6 +109,20 @@
           "default": "overlay",
           "order": 10,
           "description": "How reminders are shown."
+        },
+        "mochi.overlayPosition": {
+          "type": "string",
+          "enum": ["auto", "top-right", "bottom-right", "top-left", "bottom-left"],
+          "enumDescriptions": [
+            "Find the emptiest spot, just right of your code.",
+            "Top of the screen, right of your code.",
+            "Bottom of the screen, right of your code.",
+            "Top left corner (covers the start of your code).",
+            "Bottom left corner (covers the start of your code)."
+          ],
+          "default": "auto",
+          "order": 11,
+          "description": "Where the cat sits on your code in the overlay style. You can also click Move while the cat is on screen."
         }
       }
     }

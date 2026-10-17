@@ -144,9 +144,24 @@ ${cat}
 }
 
 // ---------- Placement ----------
-// Finds the emptiest stretch of visible lines tall enough for the picture,
-// and puts the picture just right of the code there.
-function pickSpot(editor, heightPx) {
+// Where the cat sits, from the "mochi.overlayPosition" setting.
+const POSITIONS = [
+  { value: 'auto', label: '$(sparkle) Find an empty spot', description: 'right of the code, where it is shortest' },
+  { value: 'top-right', label: '$(arrow-up) Top right' },
+  { value: 'bottom-right', label: '$(arrow-down) Bottom right' },
+  { value: 'top-left', label: '$(arrow-up) Top left', description: 'covers the start of your code' },
+  { value: 'bottom-left', label: '$(arrow-down) Bottom left', description: 'covers the start of your code' },
+];
+
+function overlayPosition() {
+  const value = vscode.workspace.getConfiguration('mochi').get('overlayPosition');
+  return POSITIONS.some((p) => p.value === value) ? value : 'auto';
+}
+
+// Picks a stretch of visible lines tall enough for the picture. "auto" finds the emptiest one;
+// the others stick to the top or bottom of the screen. The picture goes just right of the code
+// there, or at the left edge for the "-left" positions.
+function pickSpot(editor, heightPx, position) {
   const visible = editor.visibleRanges[0];
   if (!visible) return null;
 
@@ -165,13 +180,26 @@ function pickSpot(editor, heightPx) {
   const last = Math.min(visible.end.line, doc.lineCount - 1);
   const lastStart = Math.max(first, last - rows + 1);
 
-  let best = { line: first, width: Infinity };
-  for (let start = first; start <= lastStart; start++) {
+  const widthAt = (start) => {
     let width = 0;
     for (let i = start; i < start + rows; i++) width = Math.max(width, length(i));
-    if (width <= best.width) best = { line: start, width }; // ties go to the lower spot
+    return width;
+  };
+
+  let best;
+  if (position.startsWith('top')) {
+    best = { line: first, width: widthAt(first) };
+  } else if (position.startsWith('bottom')) {
+    best = { line: lastStart, width: widthAt(lastStart) };
+  } else {
+    best = { line: first, width: Infinity };
+    for (let start = first; start <= lastStart; start++) {
+      const width = widthAt(start);
+      if (width <= best.width) best = { line: start, width }; // ties go to the lower spot
+    }
   }
-  return { line: best.line, column: Math.min(best.width + 6, 80) };
+  const column = position.endsWith('left') ? 2 : Math.min(best.width + 6, 80);
+  return { line: best.line, column };
 }
 
 // ---------- One reminder on screen ----------
@@ -193,6 +221,16 @@ function showOverlay(extensionPath, data) {
 // The status bar button while the cat is on screen.
 function overlayMenu() {
   if (current) current.menu();
+}
+
+// Asks where the cat should sit and remembers it in Settings. Resolves true if a spot was picked.
+async function chooseOverlayPosition(catName) {
+  const now = overlayPosition();
+  const items = POSITIONS.map((p) => ({ ...p, detail: p.value === now ? 'current spot' : undefined }));
+  const picked = await vscode.window.showQuickPick(items, { placeHolder: `Where should ${catName} sit?` });
+  if (!picked) return false;
+  await vscode.workspace.getConfiguration('mochi').update('overlayPosition', picked.value, vscode.ConfigurationTarget.Global);
+  return true;
 }
 
 // Takes the cat off the screen right away (used when the extension shuts down or updates).
@@ -231,6 +269,10 @@ class Overlay {
         this.editor = editor;
         this.paint(true);
       }),
+      // Move, the main menu or Settings picked a new spot.
+      vscode.workspace.onDidChangeConfiguration((e) => {
+        if (e.affectsConfiguration('mochi.overlayPosition')) this.paint(false);
+      }),
     ];
 
     this.paint(true);
@@ -240,8 +282,7 @@ class Overlay {
     // The cat never stays longer than a minute. An unanswered reminder counts as dismissed;
     // a running break is stopped and counted.
     this.leaveTimer = setTimeout(() => {
-      if (this.phase === 'break') this.finish({ choice: 'done', seconds: this.seconds });
-      else if (this.phase === 'reminder') this.finish({});
+      if (this.phase !== 'done') this.close();
     }, MAX_ON_SCREEN_MS);
   }
 
@@ -263,7 +304,7 @@ class Overlay {
         : null,
     };
     const { svg, width, height } = drawScene(scene);
-    const spot = pickSpot(this.editor, height);
+    const spot = pickSpot(this.editor, height, overlayPosition());
     if (!spot) return;
 
     const uri = 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64');
@@ -305,33 +346,61 @@ class Overlay {
     return [];
   }
 
+  // Move and Close are offered in every phase, after the reminder's own buttons.
+  allChoices() {
+    return [...this.choices(), { label: 'Move', action: 'move' }, { label: 'Close', action: 'close' }];
+  }
+
   // A notification with the buttons. A stale one (from an earlier phase) is ignored.
   async notify() {
     const phase = this.phase;
-    const choices = this.choices();
+    const choices = this.allChoices();
     const text = phase === 'reminder'
       ? `${this.data.catName}: ${plain(this.data.greeting)}`
       : `${plain(this.data.breakGreeting)}. Click "${plain(this.data.stopLabel)}" when you're back.`;
     const picked = await vscode.window.showInformationMessage(text, ...choices.map((c) => c.label));
     if (this.phase !== phase) return;
     const choice = choices.find((c) => c.label === picked);
-    if (choice) this.act(choice.action);
+    if (choice?.action === 'move') {
+      await this.move();
+      if (this.phase === phase) this.notify(); // clicking Move closed the notification, so bring it back
+    } else if (choice) this.act(choice.action);
     else if (phase === 'reminder') this.finish({}); // closed with the X: the cat leaves, like closing the panel
   }
 
   async menu() {
     const phase = this.phase;
-    const choices = [...this.choices(), { label: 'Send the cat away', action: 'dismiss' }];
+    const choices = this.allChoices().map((c) => ({
+      ...c,
+      label: c.action === 'move' ? '$(move) Move the cat' : c.action === 'close' ? '$(close) Close the cat' : c.label,
+    }));
     const picked = await vscode.window.showQuickPick(choices, { placeHolder: `${this.data.catName} 🐱` });
-    if (picked && this.phase === phase) this.act(picked.action);
+    if (!picked || this.phase !== phase) return;
+    if (picked.action === 'move') this.move();
+    else this.act(picked.action);
+  }
+
+  // The config listener in start() repaints once the new spot is saved.
+  move() {
+    return chooseOverlayPosition(this.data.catName);
+  }
+
+  // Close: an unanswered reminder counts as dismissed; a running break is stopped and counted;
+  // while the cat is saying goodbye, its answer (snooze or done) still counts.
+  close() {
+    if (this.phase === 'break') this.finish({ choice: 'done', seconds: this.seconds });
+    else this.finish(this.answer || {});
   }
 
   act(action) {
-    if (action === 'snooze') {
+    if (action === 'close') {
+      this.close();
+    } else if (action === 'snooze') {
       this.phase = 'done';
       this.scene = { title: 'Fine. Hmph.', message: plain(this.data.snoozeLabel), mood: 'grumpy' };
       this.paint(false);
-      setTimeout(() => this.finish({ choice: 'snooze' }), 1500);
+      this.answer = { choice: 'snooze' };
+      setTimeout(() => this.finish(this.answer), 1500);
     } else if (action === 'break') {
       this.startBreak();
     } else if (action === 'stop') {
@@ -372,7 +441,8 @@ class Overlay {
     };
     this.paint(false);
     this.status.hide();
-    setTimeout(() => this.finish({ choice: 'done', seconds: this.seconds }), 2500);
+    this.answer = { choice: 'done', seconds: this.seconds };
+    setTimeout(() => this.finish(this.answer), 2500);
   }
 
   finish(result) {
@@ -390,4 +460,4 @@ class Overlay {
   }
 }
 
-module.exports = { showOverlay, overlayMenu, hideOverlay, drawScene, loadArt };
+module.exports = { showOverlay, overlayMenu, hideOverlay, chooseOverlayPosition, drawScene, loadArt };
